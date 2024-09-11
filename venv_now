@@ -1,0 +1,169 @@
+#!/bin/bash
+
+#
+# Name: venv_now
+# Description: Script for creating and activating Python virtual environments.
+# Version: 1.0
+#
+# Author: Juliano Atanazio
+# Date: 2024-09-11
+#
+# License: BSD 3-Clause License
+# 
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+# 
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+# 
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
+#
+
+# Function to show how to use the script
+function show_help() {
+  echo 'venv_now'
+  echo 'Usage0 [-g|--git] [-r|--requirement]'
+  echo
+  echo '  -g    Git platform (github, gitlab).'
+  echo '  -u    User name.'
+  echo '  -R    Repository.'
+  echo '  -p    Extra Python packages to install'
+  echo '        (separated by spaces and between quotes)'
+  echo '  -r    Installs Python packages through a text file.'
+  echo '  -v    Virtual environment directory.'
+  echo '  -h    Displays this help message.'
+
+  exit 0
+}
+
+# Parameters -----------------------------------------------------------------
+VENV='/tmp/venv'
+
+OPTS=":g:u:R:p:r:u:v:h"
+
+while getopts ${OPTS} OPT; do
+  case ${OPT} in
+
+    g)
+      GIT="${OPTARG}"
+      ;;
+
+    u)
+      GITUSER="${OPTARG}"
+      ;;      
+
+    R)
+      REPO="${OPTARG}"
+      ;;
+
+    r)
+      REQ="${OPTARG}"
+    ;;
+
+    p)
+      PKG="${OPTARG}"
+    ;; 
+
+    v)
+      VENV="${OPTARG}"
+      ;;
+
+    h)
+      show_help
+      ;;
+      
+    :)
+      echo "Option -${OPTARG} requires an argument."
+      exit 1
+      ;;
+
+    ?)
+      echo "Invalid option: -${OPTARG}."
+      exit 1
+      ;;
+  esac
+done
+
+
+# Functions ------------------------------------------------------------------
+
+function chk_params(){
+    ERR=('Error: If you specified git platform you must to specify user and '
+         'repository too.')
+    
+    if [ -z "${GIT}" ] && [ -z "${GITUSER}" ] && [ -z "${REPO}" ]; then
+        return 0
+    elif [ -n "${GIT}" ] && [ -z "${GITUSER}" ] ; then
+        echo "${ERR}"
+        exit 1
+    elif [ -n "${GITUSER}" ] && [ -z "${REPO}" ] ; then
+        echo "${ERR}"
+        exit 1
+    elif [ -z "${GIT}" ] || [ -z "${GITUSER}" ] ; then
+        echo "${ERR}"
+        exit 1    
+    fi
+}
+
+# Function to create the virtual environment
+function venv(){
+    VENV=${1}
+    REQ=${2}
+    PKG=${3}
+    rm -fr "${VENV}" 2> /dev/null
+    python3 -m venv "${VENV}"
+    source "${VENV}/bin/activate"
+
+    pip install -U pip flake8 ipython pickleshare ${PKG}
+
+    if [ -n "${REQ}" ]; then
+        pip install -r "${REQ}"
+    fi
+}
+
+# Git function
+function do_git(){
+    GIT="${1}"
+    GITUSER="${2}"
+    REPO="${3}"
+    REPO_DIR="/tmp/${GIT}/${REPO}"
+
+    if [ -z "${GIT}" ]; then
+        return 0
+    fi
+
+    mkdir -p ${REPO_DIR} 2> /dev/null
+
+    if [ "${GIT}" == 'github' ]; then
+        URL="git@github.com:${GITUSER}/${REPO}.git"
+    elif ["${GIT}" == 'gitlab' ]; then
+        URL="git@gitlab.com:${GITUSER}/${REPO}.git"
+    else
+        echo 'Error: Wrong option for git platform.'
+        echo 'Currently accepted: github, gitlab'
+        exit 1
+    fi
+
+    git clone ${URL} ${REPO_DIR}
+}
+
+# Main function
+function main(){
+    chk_params
+    venv "${VENV}" "${REQ}" "${PKG}"
+    do_git "${GIT}" "${GITUSER}" "${REPO}"
+    clear
+    echo "source ${VENV}/bin/activate"
+}
+
+main
