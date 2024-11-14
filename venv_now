@@ -3,10 +3,10 @@
 #
 # Name: venv_now
 # Description: Script for creating and activating Python virtual environments.
-# Version: 1.0
+# Version: 1.1
 #
 # Author: Juliano Atanazio
-# Date: 2024-09-11
+# Date: 2024-11-14
 #
 # License: BSD 3-Clause License
 # 
@@ -32,7 +32,7 @@
 # Function to show how to use the script
 function show_help() {
   echo 'venv_now'
-  echo 'Usage0 [-g|--git] [-r|--requirement]'
+  echo 'Usage0 [-g] [-r] [-h]'
   echo
   echo '  -g    Git platform (github, gitlab).'
   echo '  -u    User name.'
