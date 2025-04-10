@@ -41,15 +41,20 @@ function show_help() {
   echo '        (separated by spaces and between quotes)'
   echo '  -r    Installs Python packages through a text file.'
   echo '  -v    Virtual environment directory.'
+  echo '  -v    Virtual environment directory.'
+  echo '  -x    No virtual env creation.'
   echo '  -h    Displays this help message.'
 
   exit 0
 }
 
 # Parameters -----------------------------------------------------------------
-VENV='/tmp/venv'
+GIT='github'
+VENV_DIR='/tmp/venv'
+VENV='true'
 
-OPTS=":g:u:R:p:r:u:v:h"
+
+OPTS=":g:u:R:p:r:u:v:xh"
 
 while getopts ${OPTS} OPT; do
   case ${OPT} in
@@ -75,8 +80,12 @@ while getopts ${OPTS} OPT; do
     ;; 
 
     v)
-      VENV="${OPTARG}"
+      VENV_DIR="${OPTARG}"
       ;;
+
+    x)
+      VENV='false'
+    ;;
 
     h)
       show_help
@@ -98,8 +107,8 @@ done
 # Functions ------------------------------------------------------------------
 
 function chk_params(){
-    ERR=('Error: If you specified git platform you must to specify user and '
-         'repository too.')
+    ERR='Error: If you specified git platform you must to specify user and '
+    ERR+='repository too.'
     
     if [ -z "${GIT}" ] && [ -z "${GITUSER}" ] && [ -z "${REPO}" ]; then
         return 0
@@ -116,13 +125,13 @@ function chk_params(){
 }
 
 # Function to create the virtual environment
-function venv(){
-    VENV=${1}
+function f_venv(){
+    VENV_DIR=${1}
     REQ=${2}
     PKG=${3}
-    rm -fr "${VENV}" 2> /dev/null
-    python3 -m venv "${VENV}"
-    source "${VENV}/bin/activate"
+    rm -fr "${VENV_DIR}" 2> /dev/null
+    python3 -m venv "${VENV_DIR}"
+    source "${VENV_DIR}/bin/activate"
 
     pip install -U pip flake8 ipython pickleshare ${PKG}
 
@@ -155,15 +164,17 @@ function do_git(){
     fi
 
     git clone ${URL} ${REPO_DIR}
+    clear
 }
 
 # Main function
 function main(){
     chk_params
-    venv "${VENV}" "${REQ}" "${PKG}"
     do_git "${GIT}" "${GITUSER}" "${REPO}"
-    clear
-    echo "source ${VENV}/bin/activate"
+    if [[ ${VENV} == 'true' ]]; then
+      f_venv "${VENV_DIR}" "${REQ}" "${PKG}"
+      echo "source ${VENV_DIR}/bin/activate"
+    fi
 }
 
 main
